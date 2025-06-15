@@ -1,0 +1,2836 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CineMax - Sistem Pemesanan Tiket Bioskop</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #0d253f;
+            --secondary: #01b4e4;
+            --accent: #90cea1;
+            --light: #f8f9fa;
+            --dark: #212529;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .navbar {
+            background: linear-gradient(135deg, var(--primary) 0%, #1a3a5f 100%);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .hero-section {
+            background: linear-gradient(rgba(13, 37, 63, 0.85), rgba(13, 37, 63, 0.9)), 
+                        url('https://images.unsplash.com/photo-1536440136628-849c177e76a1?ixlib=rb-4.0.3') no-repeat center center;
+            background-size: cover;
+            color: white;
+            padding: 100px 0;
+            margin-bottom: 50px;
+        }
+        
+        .card {
+            border-radius: 15px;
+            overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
+            margin-bottom: 25px;
+            border: none;
+        }
+        
+        .card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 12px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .card-img-top {
+            height: 300px;
+            object-fit: cover;
+        }
+        
+        .btn-primary {
+            background-color: var(--secondary);
+            border-color: var(--secondary);
+        }
+        
+        .btn-primary:hover {
+            background-color: #0298c4;
+            border-color: #0298c4;
+        }
+        
+        .btn-outline-primary {
+            color: var(--secondary);
+            border-color: var(--secondary);
+        }
+        
+        .btn-outline-primary:hover {
+            background-color: var(--secondary);
+            border-color: var(--secondary);
+        }
+        
+        .badge-premium {
+            background-color: #ffc107;
+            color: var(--dark);
+        }
+        
+        .feature-icon {
+            font-size: 3rem;
+            color: var(--secondary);
+            margin-bottom: 20px;
+        }
+        
+        .section-title {
+            position: relative;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .section-title:after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 4px;
+            background: var(--secondary);
+            border-radius: 2px;
+        }
+        
+        .footer {
+            background: var(--primary);
+            color: white;
+            padding: 50px 0 20px;
+        }
+        
+        .seat-map {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 10px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .seat {
+            width: 40px;
+            height: 40px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-weight: bold;
+            background-color: #e9ecef;
+            transition: all 0.2s;
+        }
+        
+        .seat.selected {
+            background-color: var(--accent);
+            color: white;
+        }
+        
+        .seat.occupied {
+            background-color: #dc3545;
+            cursor: not-allowed;
+            color: white;
+        }
+        
+        .seat.vip {
+            background-color: #ffc107;
+            color: var(--dark);
+        }
+        
+        .screen {
+            background: linear-gradient(to bottom, #bdc3c7, #2c3e50);
+            height: 30px;
+            margin: 20px auto;
+            width: 80%;
+            border-radius: 5px;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+        
+        .step-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            position: relative;
+        }
+        
+        .step-indicator:before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background-color: #e9ecef;
+            z-index: 1;
+        }
+        
+        .step {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            width: 25%;
+        }
+        
+        .step-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 10px;
+            font-weight: bold;
+        }
+        
+        .step.active .step-circle {
+            background-color: var(--secondary);
+            color: white;
+        }
+        
+        .step.completed .step-circle {
+            background-color: var(--accent);
+            color: white;
+        }
+        
+        .cinema-card {
+            transition: all 0.3s;
+        }
+        
+        .cinema-card:hover {
+            border-color: var(--secondary);
+            box-shadow: 0 5px 15px rgba(1, 180, 228, 0.2);
+        }
+        
+        .promo-card {
+            background: linear-gradient(135deg, #90cea1 0%, #01b4e4 100%);
+            color: white;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+        
+        .admin-panel {
+            background-color: #f8f9fa;
+            min-height: 100vh;
+        }
+        
+        .admin-sidebar {
+            background: linear-gradient(135deg, var(--primary) 0%, #1a3a5f 100%);
+            color: white;
+            min-height: 100vh;
+            padding: 20px 0;
+        }
+        
+        .admin-nav a {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            display: block;
+            padding: 10px 20px;
+            border-radius: 5px;
+            margin-bottom: 5px;
+            transition: all 0.3s;
+        }
+        
+        .admin-nav a:hover, .admin-nav a.active {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        
+        .admin-nav i {
+            width: 25px;
+            text-align: center;
+            margin-right: 10px;
+        }
+        
+        .stats-card {
+            border-left: 4px solid var(--secondary);
+            border-radius: 5px;
+        }
+        
+        /* Loading spinner */
+        .spinner-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+        }
+        
+        .spinner {
+            width: 3rem;
+            height: 3rem;
+            border: 0.25em solid rgba(1, 180, 228, 0.2);
+            border-top-color: var(--secondary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Toast notification */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1100;
+        }
+        
+        /* Seat legend */
+        .seat-legend {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+            margin-right: 5px;
+            vertical-align: middle;
+        }
+
+        .seat-legend.available {
+            background-color: #e9ecef;
+        }
+
+        .seat-legend.selected {
+            background-color: var(--accent);
+        }
+
+        .seat-legend.occupied {
+            background-color: #dc3545;
+        }
+
+        /* QRIS Payment */
+        .qris-container {
+            text-align: center;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            margin: 20px 0;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .qris-image {
+            max-width: 250px;
+            margin: 0 auto;
+            display: block;
+        }
+
+        .payment-instruction {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            text-align: left;
+        }
+
+        .payment-countdown {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--secondary);
+            margin-top: 15px;
+        }
+
+        .booking-success {
+            text-align: center;
+            padding: 30px;
+            background-color: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .booking-success h4 {
+            color: var(--secondary);
+            margin-bottom: 20px;
+        }
+
+        .booking-details {
+            text-align: left;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        /* Profile styles */
+        .profile-picture {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f0f0f0;
+            border-radius: 50%;
+        }
+
+        .review-card {
+            border-left: 4px solid var(--accent);
+            margin-bottom: 15px;
+        }
+
+        .star-rating {
+            color: #ffc107;
+            font-size: 1.2rem;
+        }
+
+        .review-form {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .hero-section {
+                padding: 60px 0;
+            }
+            
+            .card-img-top {
+                height: 200px;
+            }
+            
+            .seat-map {
+                grid-template-columns: repeat(8, 1fr);
+            }
+            
+            .seat {
+                width: 30px;
+                height: 30px;
+                font-size: 0.8rem;
+            }
+        }
+
+         /* untuk admin panel */
+        .admin-panel {
+            background-color: #f8f9fa;
+            min-height: 100vh;
+            display: none; /* Sembunyikan secara default */
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="#">
+                <i class="fas fa-film me-2"></i>
+                <span class="fw-bold">CineMax</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#">Beranda</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#movies">Film</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#cinemas">Bioskop</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#promos">Promo</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#facilities">Fasilitas</a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item" id="adminNavItem" style="display: none;">
+                        <a class="nav-link" href="admin.html" id="adminPanelBtn">
+                            <i class="fas fa-cog me-1"></i> Admin Panel
+                        </a>
+                    </li>
+                </ul>
+   
+                <div class="d-flex" id="authButtons">
+                    <button class="btn btn-outline-light me-2" id="loginBtn">
+                        <i class="fas fa-sign-in-alt me-1"></i> Masuk
+                    </button>
+                    <button class="btn btn-light" id="registerBtn">
+                        <i class="fas fa-user-plus me-1"></i> Daftar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Toast Notification -->
+    <div class="toast-container">
+        <div class="toast align-items-center text-white bg-success" role="alert" aria-live="assertive" aria-atomic="true" id="successToast">
+            <div class="d-flex">
+                <div class="toast-body"></div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+        <div class="toast align-items-center text-white bg-danger" role="alert" aria-live="assertive" aria-atomic="true" id="errorToast">
+            <div class="d-flex">
+                <div class="toast-body"></div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="hero-section text-center">
+        <div class="container">
+            <h1 class="display-4 fw-bold mb-4">Nikmati Pengalaman Menonton Terbaik</h1>
+            <p class="lead mb-5">Pesan tiket bioskop dengan mudah dan cepat. Pilih film favoritmu, pilih kursi, dan nikmati!</p>
+            <div class="d-flex justify-content-center gap-3">
+                <button class="btn btn-primary btn-lg px-4 py-2" id="bookNowBtn">
+                    <i class="fas fa-ticket-alt me-2"></i> Pesan Tiket Sekarang
+                </button>
+                <button class="btn btn-outline-light btn-lg px-4 py-2" id="viewTrailersBtn">
+                    <i class="fas fa-play-circle me-2"></i> Lihat Trailer
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Now Showing Section -->
+        <section id="movies" class="mb-5">
+            <h2 class="section-title">Sedang Tayang</h2>
+            <div class="row" id="nowShowingMovies">
+                <div class="col-12 spinner-container">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Cinemas Section -->
+        <section id="cinemas" class="mb-5">
+            <h2 class="section-title">Bioskop Kami</h2>
+            <div class="row" id="cinemasList">
+                <div class="col-12 spinner-container">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Booking Process -->
+        <section class="mb-5">
+            <h2 class="section-title">Cara Pemesanan</h2>
+            <div class="row text-center">
+                <div class="col-md-3 mb-4">
+                    <div class="feature-icon">
+                        <i class="fas fa-film"></i>
+                    </div>
+                    <h4>Pilih Film</h4>
+                    <p>Cari film yang ingin ditonton dari koleksi kami</p>
+                </div>
+                <div class="col-md-3 mb-4">
+                    <div class="feature-icon">
+                        <i class="fas fa-calendar-alt"></i>
+                    </div>
+                    <h4>Pilih Jadwal</h4>
+                    <p>Tentukan tanggal dan waktu penayangan</p>
+                </div>
+                <div class="col-md-3 mb-4">
+                    <div class="feature-icon">
+                        <i class="fas fa-couch"></i>
+                    </div>
+                    <h4>Pilih Kursi</h4>
+                    <p>Pilih kursi yang nyaman di studio</p>
+                </div>
+                <div class="col-md-3 mb-4">
+                    <div class="feature-icon">
+                        <i class="fas fa-ticket-alt"></i>
+                    </div>
+                    <h4>Bayar & Cetak Tiket</h4>
+                    <p>Selesaikan pembayaran dan dapatkan tiket</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Promos Section -->
+        <section id="promos" class="mb-5">
+            <h2 class="section-title">Promo Spesial</h2>
+            <div class="row" id="promosList">
+                <div class="col-12 spinner-container">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Facilities Section -->
+    <section id="facilities" class="py-5 bg-light">
+        <div class="container">
+            <h2 class="section-title mb-5">Fasilitas Bioskop</h2>
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <i class="fas fa-couch fa-3x mb-3 text-primary"></i>
+                            <h4 class="card-title">Kursi Nyaman</h4>
+                            <p class="card-text">Kursi premium dengan sandaran yang dapat direbahkan untuk kenyamanan maksimal</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <i class="fas fa-volume-up fa-3x mb-3 text-primary"></i>
+                            <h4 class="card-title">Sound System</h4>
+                            <p class="card-text">Sistem suara Dolby Atmos untuk pengalaman audio yang imersif</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <i class="fas fa-utensils fa-3x mb-3 text-primary"></i>
+                            <h4 class="card-title">Food Court</h4>
+                            <p class="card-text">Berbagai pilihan makanan dan minuman untuk menemani pengalaman menonton Anda</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <h5 class="mb-4">CineMax</h5>
+                    <p>Memberikan pengalaman menonton terbaik dengan kualitas gambar dan suara premium serta kenyamanan maksimal.</p>
+                    <div class="social-icons mt-4">
+                        <a href="#" class="text-white me-3"><i class="fab fa-facebook-f fa-lg"></i></a>
+                        <a href="#" class="text-white me-3"><i class="fab fa-twitter fa-lg"></i></a>
+                        <a href="#" class="text-white me-3"><i class="fab fa-instagram fa-lg"></i></a>
+                        <a href="#" class="text-white"><i class="fab fa-youtube fa-lg"></i></a>
+                    </div>
+                </div>
+                <div class="col-md-2 mb-4">
+                    <h5 class="mb-4">Tautan</h5>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><a href="#" class="text-white text-decoration-none">Beranda</a></li>
+                        <li class="mb-2"><a href="#movies" class="text-white text-decoration-none">Film</a></li>
+                        <li class="mb-2"><a href="#cinemas" class="text-white text-decoration-none">Bioskop</a></li>
+                        <li class="mb-2"><a href="#promos" class="text-white text-decoration-none">Promo</a></li>
+                        <li><a href="#facilities" class="text-white text-decoration-none">Fasilitas</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-3 mb-4">
+                    <h5 class="mb-4">Kontak</h5>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><i class="fas fa-map-marker-alt me-2"></i> Jl. Bioskop No. 123, Jakarta</li>
+                        <li class="mb-2"><i class="fas fa-phone me-2"></i> (021) 1234-5678</li>
+                        <li class="mb-2"><i class="fas fa-envelope me-2"></i> info@cinemax.com</li>
+                        <li><i class="fas fa-clock me-2"></i> Buka Setiap Hari 10:00 - 24:00</li>
+                    </ul>
+                </div>
+                <div class="col-md-3 mb-4">
+                    <h5 class="mb-4">Newsletter</h5>
+                    <p>Dapatkan promo dan info film terbaru langsung ke email Anda</p>
+                    <div class="input-group">
+                        <input type="email" class="form-control" placeholder="Email Anda" id="newsletterEmail">
+                        <button class="btn btn-primary" type="button" id="subscribeBtn">Daftar</button>
+                    </div>
+                </div>
+            </div>
+            <hr class="my-4 bg-light">
+            <div class="text-center">
+                <p class="mb-0">&copy; 2023 CineMax. Hak Cipta Dilindungi.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Modals -->
+    <!-- Login Modal -->
+    <div class="modal fade" id="loginModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Masuk ke Akun Anda</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="loginForm">
+                        <div class="mb-3">
+                            <label for="loginEmail" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="loginEmail" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="loginPassword" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="loginPassword" required>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="rememberMe">
+                            <label class="form-check-label" for="rememberMe">Ingat saya</label>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Masuk</button>
+                    </form>
+                    <div class="mt-3 text-center">
+                        <a href="#" id="forgotPassword">Lupa password?</a>
+                        <p class="mt-2">Belum punya akun? <a href="#" id="showRegister">Daftar disini</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div class="modal fade" id="registerModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Buat Akun Baru</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="registerForm">
+                        <div class="mb-3">
+                            <label for="registerName" class="form-label">Nama Lengkap</label>
+                            <input type="text" class="form-control" id="registerName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="registerEmail" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="registerEmail" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="registerPhone" class="form-label">Nomor Telepon</label>
+                            <input type="tel" class="form-control" id="registerPhone" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="registerPassword" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="registerPassword" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="registerConfirmPassword" class="form-label">Konfirmasi Password</label>
+                            <input type="password" class="form-control" id="registerConfirmPassword" required>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="agreeTerms">
+                            <label class="form-check-label" for="agreeTerms">Saya menyetujui <a href="#">syarat dan ketentuan</a></label>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Daftar</button>
+                    </form>
+                    <div class="mt-3 text-center">
+                        <p>Sudah punya akun? <a href="#" id="showLogin">Masuk disini</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Movie Detail Modal -->
+    <div class="modal fade" id="movieDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="movieDetailTitle"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <img src="" class="img-fluid rounded mb-3" id="movieDetailPoster" alt="Movie Poster">
+                        </div>
+                        <div class="col-md-8">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item">
+                                    <strong>Genre:</strong> <span id="movieDetailGenre"></span>
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>Durasi:</strong> <span id="movieDetailDuration"></span> menit
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>Rating:</strong> <span id="movieDetailRating"></span>
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>Sinopsis:</strong>
+                                    <p id="movieDetailSynopsis" class="mt-2"></p>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <a href="#" class="btn btn-outline-primary" id="watchTrailerBtn" target="_blank">
+                        <i class="fas fa-play-circle me-2"></i> Tonton Trailer
+                    </a>
+                    <button type="button" class="btn btn-primary" id="bookThisMovieBtn">
+                        <i class="fas fa-ticket-alt me-2"></i> Pesan Tiket
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Booking Modal -->
+    <div class="modal fade" id="bookingModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Pesan Tiket</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="step-indicator">
+                        <div class="step active" id="step1">
+                            <div class="step-circle">1</div>
+                            <div class="step-label">Pilih Bioskop</div>
+                        </div>
+                        <div class="step" id="step2">
+                            <div class="step-circle">2</div>
+                            <div class="step-label">Pilih Jadwal</div>
+                        </div>
+                        <div class="step" id="step3">
+                            <div class="step-circle">3</div>
+                            <div class="step-label">Pilih Kursi</div>
+                        </div>
+                        <div class="step" id="step4">
+                            <div class="step-circle">4</div>
+                            <div class="step-label">Pembayaran</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Step 1: Select Cinema -->
+                    <div id="step1Content">
+                        <h4 class="mb-4">Pilih Bioskop</h4>
+                        <div class="row" id="cinemaSelection"></div>
+                    </div>
+                    
+                    <!-- Step 2: Select Schedule -->
+                    <div id="step2Content" style="display: none;">
+                        <h4 class="mb-4">Pilih Jadwal Tayang</h4>
+                        <div class="row" id="scheduleSelection"></div>
+                    </div>
+                    
+                    <!-- Step 3: Select Seats -->
+                    <div id="step3Content" style="display: none;">
+                        <h4 class="mb-4">Pilih Kursi</h4>
+                        <div class="d-flex justify-content-between mb-4">
+                            <div>
+                                <span class="seat-legend available"></span> Tersedia
+                                <span class="seat-legend selected ms-3"></span> Dipilih
+                                <span class="seat-legend occupied ms-3"></span> Terisi
+                                <span class="seat-legend vip ms-3"></span> VIP (+Rp 10.000)
+                            </div>
+                            <div class="fw-bold">Total: <span id="totalPrice">Rp 0</span></div>
+                        </div>
+                        
+                        <div class="screen">LAYAR</div>
+                        <div class="seat-map" id="seatMap"></div>
+                    </div>
+                    
+                    <!-- Step 4: Payment -->
+                    <div id="step4Content" style="display: none;">
+                        <div class="row">
+                            <div class="col-md-7">
+                                <h4 class="mb-4">Pembayaran</h4>
+                                <div class="qris-container">
+                                    <p class="fw-bold">Scan QRIS untuk Pembayaran</p>
+                                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=CineMaxTiket" alt="QR Code" class="qris-image mb-3">
+                                    <p class="payment-countdown" id="paymentCountdown">Selesaikan pembayaran dalam: 05:00</p>
+                                </div>
+                                
+                                <div class="mt-4">
+                                    <label class="form-label">Kode Promo</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="promoCode" placeholder="Masukkan kode promo">
+                                        <button class="btn btn-outline-primary" type="button" id="applyPromoBtn">Terapkan</button>
+                                    </div>
+                                    <div id="promoMessage" class="mt-2"></div>
+                                </div>
+                                
+                                <div class="form-check mt-4">
+                                    <input class="form-check-input" type="checkbox" id="agreeTerms">
+                                    <label class="form-check-label" for="agreeTerms">
+                                        Saya menyetujui <a href="#">syarat dan ketentuan</a> yang berlaku
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-5">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5>Detail Pemesanan</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="d-flex mb-3">
+                                            <img src="" id="bookingMoviePoster" alt="Movie Poster" class="img-fluid rounded me-3" style="width: 80px; height: 120px; object-fit: cover;">
+                                            <div>
+                                                <h6 id="bookingMovieTitle"></h6>
+                                                <p class="mb-1"><small class="text-muted">Bioskop:</small> <span id="bookingCinemaName"></span></p>
+                                                <p class="mb-1"><small class="text-muted">Tanggal:</small> <span id="bookingScheduleDate"></span></p>
+                                                <p class="mb-1"><small class="text-muted">Waktu:</small> <span id="bookingScheduleTime"></span></p>
+                                                <p class="mb-1"><small class="text-muted">Kursi:</small> <span id="bookingSeats"></span></p>
+                                            </div>
+                                        </div>
+                                        <hr>
+                                        <div class="d-flex justify-content-between">
+                                            <h5>Total Pembayaran</h5>
+                                            <h5 id="bookingTotalPrice">Rp 0</h5>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="prevStepBtn" style="display: none;">Kembali</button>
+                    <button type="button" class="btn btn-primary" id="nextStepBtn">Lanjut</button>
+                    <button type="button" class="btn btn-success" id="confirmBookingBtn" style="display: none;">Konfirmasi Pembayaran</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Movie Selection Modal -->
+    <div class="modal fade" id="movieSelectionModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Pilih Film</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row" id="movieSelectionList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Modal -->
+    <div class="modal fade" id="profileModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Profil Pengguna</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <div class="profile-picture mb-3">
+                        <i class="fas fa-user fa-3x text-secondary"></i>
+                    </div>
+                    <h4 id="profileName"></h4>
+                    <p class="text-muted" id="profileEmail"></p>
+                    
+                    <div class="card mt-4">
+                        <div class="card-body text-start">
+                            <h6>Informasi Akun</h6>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item">
+                                    <strong><i class="fas fa-phone me-2"></i> Telepon:</strong> <span id="profilePhone"></span>
+                                </li>
+                                <li class="list-group-item">
+                                    <strong><i class="fas fa-coins me-2"></i> Poin:</strong> <span id="profilePoints"></span>
+                                </li>
+                                <li class="list-group-item">
+                                    <strong><i class="fas fa-calendar-alt me-2"></i> Bergabung:</strong> <span id="profileJoinDate"></span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
+                    <button type="button" class="btn btn-primary" id="editProfileBtn">Edit Profil</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Profile Modal -->
+    <div class="modal fade" id="editProfileModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Profil</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editProfileForm">
+                        <div class="mb-3">
+                            <label for="editName" class="form-label">Nama Lengkap</label>
+                            <input type="text" class="form-control" id="editName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editPhone" class="form-label">Nomor Telepon</label>
+                            <input type="tel" class="form-control" id="editPhone" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editPassword" class="form-label">Password Baru (opsional)</label>
+                            <input type="password" class="form-control" id="editPassword">
+                        </div>
+                        <div class="mb-3">
+                            <label for="editConfirmPassword" class="form-label">Konfirmasi Password Baru</label>
+                            <input type="password" class="form-control" id="editConfirmPassword">
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Simpan Perubahan</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- My Tickets Modal -->
+    <div class="modal fade" id="myTicketsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Tiket Saya</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Kode Booking</th>
+                                    <th>Film</th>
+                                    <th>Tanggal</th>
+                                    <th>Kursi</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="myTicketsList">
+                                <!-- Tickets will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ticket Detail Modal -->
+    <div class="modal fade" id="ticketDetailModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Detail Tiket</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title text-center">CineMax</h5>
+                            <div class="text-center mb-4">E-Ticket</div>
+                            
+                            <div class="d-flex justify-content-between mb-3">
+                                <div>
+                                    <small class="text-muted">Kode Booking</small>
+                                    <h6 id="ticketRef"></h6>
+                                </div>
+                                <div>
+                                    <small class="text-muted">Tanggal</small>
+                                    <h6 id="ticketDate"></h6>
+                                </div>
+                            </div>
+                            
+                            <hr>
+                            
+                            <div class="mb-3">
+                                <small class="text-muted">Film</small>
+                                <h5 id="ticketMovie"></h5>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <small class="text-muted">Bioskop</small>
+                                    <h6 id="ticketCinema"></h6>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted">Waktu</small>
+                                    <h6 id="ticketTime"></h6>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <small class="text-muted">Kursi</small>
+                                <h4 id="ticketSeats"></h4>
+                            </div>
+                            
+                            <div class="text-center mt-4">
+                                <div class="barcode">
+                                    <svg id="barcode"></svg>
+                                </div>
+                                <small class="text-muted">Tunjukkan barcode ini saat masuk</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-primary" onclick="window.print()">
+                        <i class="fas fa-print me-2"></i> Cetak
+                    </button>
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Panel Modal -->
+    <div class="modal fade" id="adminPanelModal" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-fullscreen-lg-down">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Admin Panel</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div class="row g-0 admin-panel">
+                        <div class="col-md-3 admin-sidebar">
+                            <div class="p-3">
+                                <h5 class="text-white mb-4">Menu Admin</h5>
+                                <nav class="admin-nav">
+                                    <a href="#" class="active" data-target="dashboard"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+                                    <a href="#" data-target="manageMovies"><i class="fas fa-film"></i> Kelola Film</a>
+                                    <a href="#" data-target="manageSchedules"><i class="fas fa-calendar-alt"></i> Kelola Jadwal</a>
+                                    <a href="#" data-target="managePromos"><i class="fas fa-tag"></i> Kelola Promo</a>
+                                    <a href="#" data-target="manageCinemas"><i class="fas fa-building"></i> Kelola Bioskop</a>
+                                    <a href="#" data-target="viewReports"><i class="fas fa-chart-bar"></i> Laporan</a>
+                                </nav>
+                            </div>
+                        </div>
+                        <div class="col-md-9">
+                            <div class="p-4">
+                                <!-- Dashboard Content -->
+                                <div id="dashboardContent">
+                                    <h4 class="mb-4">Dashboard Admin</h4>
+                                    <div class="row">
+                                        <div class="col-md-4 mb-4">
+                                            <div class="card stats-card">
+                                                <div class="card-body">
+                                                    <h5 class="card-title">Total Film</h5>
+                                                    <h2 id="totalMoviesCount">0</h2>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4 mb-4">
+                                            <div class="card stats-card">
+                                                <div class="card-body">
+                                                    <h5 class="card-title">Total Pemesanan</h5>
+                                                    <h2 id="totalBookingsCount">0</h2>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4 mb-4">
+                                            <div class="card stats-card">
+                                                <div class="card-body">
+                                                    <h5 class="card-title">Total Pendapatan</h5>
+                                                    <h2 id="totalRevenue">Rp 0</h2>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="card mb-4">
+                                        <div class="card-header">
+                                            <h5>Film Terpopuler</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <canvas id="popularMoviesChart" height="250"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- ... (kode admin panel lainnya) ... -->
+
+                                <!-- Reports Content -->
+                                <div id="viewReportsContent" style="display: none;">
+                                    <h4 class="mb-4">Laporan</h4>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="card mb-4">
+                                                <div class="card-header">
+                                                    <h5>Pemesanan Terbaru</h5>
+                                                </div>
+                                                <div class="card-body">
+                                                    <div class="table-responsive">
+                                                        <table class="table table-sm">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>Kode</th>
+                                                                    <th>Film</th>
+                                                                    <th>Total</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody id="recentBookingsTable">
+                                                                <!-- Recent bookings will be loaded here -->
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="card">
+                                                <div class="card-header">
+                                                    <h5>Pendapatan Bulanan</h5>
+                                                </div>
+                                                <div class="card-body">
+                                                    <canvas id="revenueChart" height="250"></canvas>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h5>Ulasan Terbaru</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="table-responsive">
+                                                <table class="table table-striped">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Film</th>
+                                                            <th>Pengguna</th>
+                                                            <th>Rating</th>
+                                                            <th>Ulasan</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody id="recentReviewsTable">
+                                                        <!-- Recent reviews will be loaded here -->
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBCKSFSqF5P1pt5x6z6JAG-c35JvAYog9c",
+            authDomain: "aplikasi-pemesanan-tiket-97b9f.firebaseapp.com",
+            projectId: "aplikasi-pemesanan-tiket-97b9f",
+            storageBucket: "aplikasi-pemesanan-tiket-97b9f.appspot.com",
+            messagingSenderId: "243371297005",
+            appId: "1:243371297005:web:4d67050febc7cb89fea4e4",
+            measurementId: "G-Q4PR1Z5Y6N"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        // Initialize modals
+        const loginModal = new bootstrap.Modal(document.getElementById('loginModal'));
+        const registerModal = new bootstrap.Modal(document.getElementById('registerModal'));
+        const movieDetailModal = new bootstrap.Modal(document.getElementById('movieDetailModal'));
+        const bookingModal = new bootstrap.Modal(document.getElementById('bookingModal'));
+        const movieSelectionModal = new bootstrap.Modal(document.getElementById('movieSelectionModal'));
+        const profileModal = new bootstrap.Modal(document.getElementById('profileModal'));
+        const editProfileModal = new bootstrap.Modal(document.getElementById('editProfileModal'));
+        const myTicketsModal = new bootstrap.Modal(document.getElementById('myTicketsModal'));
+        const ticketDetailModal = new bootstrap.Modal(document.getElementById('ticketDetailModal'));
+        
+        // Initialize toasts
+        const successToast = new bootstrap.Toast(document.getElementById('successToast'));
+        const errorToast = new bootstrap.Toast(document.getElementById('errorToast'));
+
+        // Global variables for booking process
+        let currentUser = null;
+        let selectedMovie = null;
+        let selectedCinema = null;
+        let selectedSchedule = null;
+        let selectedSeats = [];
+        let currentStep = 1;
+        let appliedPromo = null;
+        let basePrice = 0;
+        let totalPrice = 0;
+        let paymentTimer = null;
+        let timeLeft = 300; // 5 minutes in seconds
+        let bookingRef = ''; // For storing booking reference
+const adminNavItem = document.getElementById('adminNavItem');
+        const adminPanelBtn = document.getElementById('adminPanelBtn');
+        // DOM elements
+        const loginBtn = document.getElementById('loginBtn');
+        const registerBtn = document.getElementById('registerBtn');
+        const showRegister = document.getElementById('showRegister');
+        const showLogin = document.getElementById('showLogin');
+        const forgotPassword = document.getElementById('forgotPassword');
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        const bookNowBtn = document.getElementById('bookNowBtn');
+        const subscribeBtn = document.getElementById('subscribeBtn');
+        const prevStepBtn = document.getElementById('prevStepBtn');
+        const nextStepBtn = document.getElementById('nextStepBtn');
+        const confirmBookingBtn = document.getElementById('confirmBookingBtn');
+        const applyPromoBtn = document.getElementById('applyPromoBtn');
+        const editProfileForm = document.getElementById('editProfileForm');
+        const editProfileBtn = document.getElementById('editProfileBtn');
+        const authButtons = document.getElementById('authButtons');
+
+           // Fungsi untuk memeriksa peran pengguna
+        async function checkUserRole(user) {
+            try {
+                const userDoc = await db.collection('users').doc(user.uid).get();
+                if (userDoc.exists) {
+                    return userDoc.data().role || 'user';
+                }
+                return 'user';
+            } catch (error) {
+                console.error("Error checking user role:", error);
+                return 'user';
+            }
+        }
+
+        // Update UI berdasarkan status autentikasi
+        function updateAuthUI() {
+            if (currentUser) {
+                // User is logged in
+                loginBtn.style.display = 'none';
+                registerBtn.style.display = 'none';
+                authButtons.style.display = 'none';
+                userProfile.style.display = 'block';
+                
+                // Set username
+                usernameSpan.textContent = currentUser.email.split('@')[0];
+                
+                // Periksa peran dan tampilkan menu admin jika perlu
+                checkUserRole(currentUser).then(role => {
+                    if (role === 'admin') {
+                        adminNavItem.style.display = 'block';
+                    } else {
+                        adminNavItem.style.display = 'none';
+                    }
+                });
+            } else {
+                // User is not logged in
+                loginBtn.style.display = 'block';
+                registerBtn.style.display = 'block';
+                authButtons.style.display = 'flex';
+                userProfile.style.display = 'none';
+                adminNavItem.style.display = 'none';
+            }
+        }
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check auth state
+            auth.onAuthStateChanged(user => {
+                currentUser = user;
+                updateAuthUI();
+                
+                if (user) {
+                    // User is signed in
+                    loadMovies();
+                    loadCinemas();
+                    loadPromos();
+                } else {
+                    // No user is signed in
+                    loadMovies();
+                    loadCinemas();
+                    loadPromos();
+                }
+            });
+
+            // Login/Register buttons
+            loginBtn.addEventListener('click', () => loginModal.show());
+            registerBtn.addEventListener('click', () => registerModal.show());
+            
+            // Switch between login and register modals
+            showRegister.addEventListener('click', (e) => {
+                e.preventDefault();
+                loginModal.hide();
+                registerModal.show();
+            });
+            
+            showLogin.addEventListener('click', (e) => {
+                e.preventDefault();
+                registerModal.hide();
+                loginModal.show();
+            });
+            
+            // Forgot password
+            forgotPassword.addEventListener('click', (e) => {
+                e.preventDefault();
+                const email = document.getElementById('loginEmail').value || prompt("Masukkan email Anda untuk reset password:");
+                if (email) {
+                    auth.sendPasswordResetEmail(email)
+                        .then(() => {
+                            showToast('success', 'Email reset password telah dikirim. Silakan cek email Anda.');
+                        })
+                        .catch(error => {
+                            showToast('error', error.message);
+                        });
+                }
+            });
+            
+            // Login form
+            loginForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const email = document.getElementById('loginEmail').value;
+                const password = document.getElementById('loginPassword').value;
+                
+                auth.signInWithEmailAndPassword(email, password)
+                    .then(() => {
+                        showToast('success', 'Login berhasil!');
+                        loginModal.hide();
+                    })
+                    .catch(error => {
+                        showToast('error', error.message);
+                    });
+            });
+            
+            // Register form
+            registerForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const name = document.getElementById('registerName').value;
+                const email = document.getElementById('registerEmail').value;
+                const phone = document.getElementById('registerPhone').value;
+                const password = document.getElementById('registerPassword').value;
+                const confirmPassword = document.getElementById('registerConfirmPassword').value;
+                
+                if (password !== confirmPassword) {
+                    showToast('error', 'Password dan konfirmasi password tidak cocok');
+                    return;
+                }
+                
+                auth.createUserWithEmailAndPassword(email, password)
+                    .then((userCredential) => {
+                        // Add user data to Firestore
+                        return db.collection('users').doc(userCredential.user.uid).set({
+                            name: name,
+                            email: email,
+                            phone: phone,
+                            role: 'user',
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                            points: 0
+                        });
+                    })
+                    .then(() => {
+                        showToast('success', 'Registrasi berhasil!');
+                        registerModal.hide();
+                    })
+                    .catch(error => {
+                        showToast('error', error.message);
+                    });
+            });
+            
+            // Book now button
+            bookNowBtn.addEventListener('click', () => {
+                if (!currentUser) {
+                    showToast('error', 'Anda harus login terlebih dahulu');
+                    loginModal.show();
+                } else {
+                    loadMoviesForSelection();
+                    movieSelectionModal.show();
+                }
+            });
+            
+            // Newsletter subscription
+            subscribeBtn.addEventListener('click', () => {
+                const email = document.getElementById('newsletterEmail').value;
+                if (email) {
+                    db.collection('newsletter').add({
+                        email: email,
+                        subscribedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    })
+                    .then(() => {
+                        showToast('success', 'Terima kasih telah berlangganan newsletter kami!');
+                        document.getElementById('newsletterEmail').value = '';
+                    })
+                    .catch(error => {
+                        showToast('error', error.message);
+                    });
+                } else {
+                    showToast('error', 'Silakan masukkan email Anda');
+                }
+            });
+            
+            // Booking process navigation
+            prevStepBtn.addEventListener('click', goToPreviousStep);
+            nextStepBtn.addEventListener('click', goToNextStep);
+            confirmBookingBtn.addEventListener('click', confirmBooking);
+            
+            // Apply promo code
+            applyPromoBtn.addEventListener('click', applyPromo);
+            
+            // Edit profile form
+            editProfileForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const name = document.getElementById('editName').value;
+                const phone = document.getElementById('editPhone').value;
+                const password = document.getElementById('editPassword').value;
+                const confirmPassword = document.getElementById('editConfirmPassword').value;
+                
+                if (password && password !== confirmPassword) {
+                    showToast('error', 'Password baru dan konfirmasi tidak cocok');
+                    return;
+                }
+                
+                const updates = {
+                    name: name,
+                    phone: phone
+                };
+                
+                // Update Firestore
+                db.collection('users').doc(currentUser.uid).update(updates)
+                    .then(() => {
+                        // Update password if provided
+                        if (password) {
+                            return currentUser.updatePassword(password);
+                        }
+                    })
+                    .then(() => {
+                        showToast('success', 'Profil berhasil diperbarui');
+                        editProfileModal.hide();
+                        showUserProfile();
+                    })
+                    .catch(error => {
+                        showToast('error', 'Gagal memperbarui profil: ' + error.message);
+                    });
+            });
+            
+            // Edit profile button
+            editProfileBtn.addEventListener('click', showUserProfile);
+        });
+
+        // Update UI based on auth state
+        function updateAuthUI() {
+            if (currentUser) {
+                // User is logged in
+                loginBtn.style.display = 'none';
+                registerBtn.style.display = 'none';
+                
+                // Add user dropdown menu
+                const userMenu = `
+                    <div class="dropdown">
+                        <button class="btn btn-outline-light dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown">
+                            <i class="fas fa-user-circle me-1"></i> ${currentUser.email}
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="#" id="profileBtn"><i class="fas fa-user me-2"></i> Profil</a></li>
+                            <li><a class="dropdown-item" href="#" id="myTicketsBtn"><i class="fas fa-ticket-alt me-2"></i> Tiket Saya</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt me-2"></i> Logout</a></li>
+                        </ul>
+                    </div>
+                `;
+                
+                authButtons.innerHTML = userMenu;
+                
+                // Add event listeners
+                document.getElementById('profileBtn').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    showUserProfile();
+                });
+                
+                document.getElementById('myTicketsBtn').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    loadMyTickets();
+                    myTicketsModal.show();
+                });
+                
+                document.getElementById('logoutBtn').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    auth.signOut()
+                        .then(() => {
+                            showToast('success', 'Logout berhasil');
+                            window.location.reload();
+                        })
+                        .catch(error => {
+                            showToast('error', error.message);
+                        });
+                });
+            } else {
+                // User is not logged in
+                loginBtn.style.display = 'block';
+                registerBtn.style.display = 'block';
+            }
+        }
+
+        // Show user profile
+        function showUserProfile() {
+            // Load user data
+            db.collection('users').doc(currentUser.uid).get()
+                .then(doc => {
+                    if (doc.exists) {
+                        const userData = doc.data();
+                        
+                        document.getElementById('profileName').textContent = userData.name;
+                        document.getElementById('profileEmail').textContent = currentUser.email;
+                        document.getElementById('profilePhone').textContent = userData.phone || '-';
+                        document.getElementById('profilePoints').textContent = userData.points || 0;
+                        
+                        if (userData.createdAt) {
+                            const joinDate = new Date(userData.createdAt.seconds * 1000);
+                            document.getElementById('profileJoinDate').textContent = joinDate.toLocaleDateString('id-ID');
+                        } else {
+                            document.getElementById('profileJoinDate').textContent = '-';
+                        }
+                        
+                        // Set values in edit form
+                        document.getElementById('editName').value = userData.name || '';
+                        document.getElementById('editPhone').value = userData.phone || '';
+                        document.getElementById('editPassword').value = '';
+                        document.getElementById('editConfirmPassword').value = '';
+                        
+                        profileModal.show();
+                    }
+                })
+                .catch(error => {
+                    showToast('error', 'Gagal memuat profil: ' + error.message);
+                });
+        }
+
+        // Load user tickets
+        function loadMyTickets() {
+            const ticketsList = document.getElementById('myTicketsList');
+            ticketsList.innerHTML = '<tr><td colspan="5" class="text-center py-4"><div class="spinner"></div></td></tr>';
+            
+            db.collection('bookings')
+                .where('userId', '==', currentUser.uid)
+                .orderBy('createdAt', 'desc')
+                .get()
+                .then(querySnapshot => {
+                    ticketsList.innerHTML = '';
+                    
+                    if (querySnapshot.empty) {
+                        ticketsList.innerHTML = '<tr><td colspan="5" class="text-center py-4">Anda belum memiliki tiket</td></tr>';
+                        return;
+                    }
+                    
+                    querySnapshot.forEach(doc => {
+                        const booking = doc.data();
+                        const bookingDate = new Date(booking.createdAt.seconds * 1000);
+                        const scheduleDate = new Date(booking.scheduleDateTime.seconds * 1000);
+                        
+                        const row = `
+                            <tr>
+                                <td>${booking.bookingRef}</td>
+                                <td>${booking.movieTitle}</td>
+                                <td>${scheduleDate.toLocaleDateString('id-ID')}</td>
+                                <td>${booking.seats.join(', ')}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary view-ticket-btn" data-id="${doc.id}">
+                                        <i class="fas fa-eye"></i> Detail
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                        ticketsList.innerHTML += row;
+                    });
+                    
+                    // Add event listeners to view buttons
+                    document.querySelectorAll('.view-ticket-btn').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const bookingId = this.getAttribute('data-id');
+                            viewTicketDetails(bookingId);
+                        });
+                    });
+                })
+                .catch(error => {
+                    showToast('error', 'Gagal memuat tiket: ' + error.message);
+                    ticketsList.innerHTML = '<tr><td colspan="5" class="text-center py-4">Gagal memuat tiket</td></tr>';
+                });
+        }
+
+        // View ticket details
+        function viewTicketDetails(bookingId) {
+            db.collection('bookings').doc(bookingId).get()
+                .then(doc => {
+                    if (doc.exists) {
+                        const booking = doc.data();
+                        const scheduleDate = new Date(booking.scheduleDateTime.seconds * 1000);
+                        
+                        document.getElementById('ticketRef').textContent = booking.bookingRef;
+                        document.getElementById('ticketMovie').textContent = booking.movieTitle;
+                        document.getElementById('ticketCinema').textContent = booking.cinemaName;
+                        document.getElementById('ticketDate').textContent = scheduleDate.toLocaleDateString('id-ID');
+                        document.getElementById('ticketTime').textContent = scheduleDate.toLocaleTimeString('id-ID');
+                        document.getElementById('ticketSeats').textContent = booking.seats.join(', ');
+                        document.getElementById('ticketTotal').textContent = 'Rp ' + booking.totalPrice.toLocaleString('id-ID');
+                        
+                        ticketDetailModal.show();
+                    }
+                })
+                .catch(error => {
+                    showToast('error', 'Gagal memuat detail tiket: ' + error.message);
+                });
+        }
+
+        // Show toast notification
+        function showToast(type, message) {
+            const toastBody = type === 'success' 
+                ? document.querySelector('#successToast .toast-body') 
+                : document.querySelector('#errorToast .toast-body');
+            
+            toastBody.textContent = message;
+            
+            if (type === 'success') {
+                errorToast.hide();
+                successToast.show();
+            } else {
+                successToast.hide();
+                errorToast.show();
+            }
+        }
+
+        // Load movies from Firestore
+        function loadMovies() {
+            const moviesContainer = document.getElementById('nowShowingMovies');
+            moviesContainer.innerHTML = '<div class="col-12 spinner-container"><div class="spinner"></div></div>';
+            
+            db.collection('movies').where('status', '==', 'Now Playing').get()
+                .then((querySnapshot) => {
+                    moviesContainer.innerHTML = '';
+                    
+                    if (querySnapshot.empty) {
+                        moviesContainer.innerHTML = '<div class="col-12 text-center py-5"><p>Tidak ada film yang sedang tayang</p></div>';
+                        return;
+                    }
+                    
+                    querySnapshot.forEach((doc) => {
+                        const movie = doc.data();
+                        const movieCard = `
+                            <div class="col-lg-3 col-md-6">
+                                <div class="card h-100">
+                                    <img src="${movie.poster}" class="card-img-top" alt="${movie.title}">
+                                    <div class="card-body">
+                                        <h5 class="card-title">${movie.title}</h5>
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span class="badge bg-secondary">${movie.genre.split(',')[0]}</span>
+                                            <span><i class="fas fa-clock me-1"></i> ${movie.duration} min</span>
+                                        </div>
+                                        <p class="card-text"><i class="fas fa-star text-warning me-1"></i> Rating: ${movie.rating}</p>
+                                    </div>
+                                    <div class="card-footer bg-white border-0">
+                                        <button class="btn btn-primary w-100 book-btn" data-id="${doc.id}">
+                                            <i class="fas fa-ticket-alt me-2"></i> Pesan Tiket
+                                        </button>
+                                        <button class="btn btn-outline-primary w-100 mt-2 detail-btn" data-id="${doc.id}">
+                                            <i class="fas fa-info-circle me-2"></i> Detail Film
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        moviesContainer.innerHTML += movieCard;
+                    });
+                    
+                    // Add event listeners to buttons
+                    document.querySelectorAll('.book-btn').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            if (!currentUser) {
+                                showToast('error', 'Anda harus login terlebih dahulu');
+                                loginModal.show();
+                            } else {
+                                const movieId = this.getAttribute('data-id');
+                                startBookingProcess(movieId);
+                            }
+                        });
+                    });
+                    
+                    document.querySelectorAll('.detail-btn').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const movieId = this.getAttribute('data-id');
+                            showMovieDetails(movieId);
+                        });
+                    });
+                })
+                .catch((error) => {
+                    showToast('error', 'Gagal memuat data film: ' + error.message);
+                });
+        }
+
+        // Load movies for selection in modal
+        function loadMoviesForSelection() {
+            const movieList = document.getElementById('movieSelectionList');
+            movieList.innerHTML = '<div class="col-12 spinner-container"><div class="spinner"></div></div>';
+            
+            db.collection('movies').where('status', '==', 'Now Playing').get()
+                .then((querySnapshot) => {
+                    movieList.innerHTML = '';
+                    
+                    if (querySnapshot.empty) {
+                        movieList.innerHTML = '<div class="col-12 text-center py-5"><p>Tidak ada film yang sedang tayang</p></div>';
+                        return;
+                    }
+                    
+                    querySnapshot.forEach((doc) => {
+                        const movie = doc.data();
+                        const movieCard = `
+                            <div class="col-md-6 mb-3">
+                                <div class="card h-100">
+                                    <img src="${movie.poster}" class="card-img-top" alt="${movie.title}" style="height: 200px; object-fit: cover;">
+                                    <div class="card-body">
+                                        <h5 class="card-title">${movie.title}</h5>
+                                        <p class="card-text"><i class="fas fa-star text-warning me-1"></i> ${movie.rating}</p>
+                                    </div>
+                                    <div class="card-footer bg-white border-0">
+                                        <button class="btn btn-primary w-100 select-movie-btn" data-id="${doc.id}">
+                                            Pilih Film Ini
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        movieList.innerHTML += movieCard;
+                    });
+                    
+                    // Add event listeners to buttons
+                    document.querySelectorAll('.select-movie-btn').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const movieId = this.getAttribute('data-id');
+                            movieSelectionModal.hide();
+                            startBookingProcess(movieId);
+                        });
+                    });
+                })
+                .catch((error) => {
+                    showToast('error', 'Gagal memuat data film: ' + error.message);
+                });
+        }
+
+        // Load cinemas from Firestore
+        function loadCinemas() {
+            const cinemasContainer = document.getElementById('cinemasList');
+            cinemasContainer.innerHTML = '<div class="col-12 spinner-container"><div class="spinner"></div></div>';
+            
+            db.collection('cinemas').get()
+                .then((querySnapshot) => {
+                    cinemasContainer.innerHTML = '';
+                    
+                    if (querySnapshot.empty) {
+                        cinemasContainer.innerHTML = '<div class="col-12 text-center py-5"><p>Tidak ada bioskop tersedia</p></div>';
+                        return;
+                    }
+                    
+                    querySnapshot.forEach((doc) => {
+                        const cinema = doc.data();
+                        const cinemaCard = `
+                            <div class="col-md-6">
+                                <div class="card cinema-card h-100">
+                                    <div class="row g-0">
+                                        <div class="col-md-5">
+                                            <img src="${cinema.image}" class="img-fluid rounded-start h-100" style="object-fit: cover;" alt="${cinema.name}">
+                                        </div>
+                                        <div class="col-md-7">
+                                            <div class="card-body">
+                                                <h5 class="card-title">${cinema.name}</h5>
+                                                <p class="card-text"><i class="fas fa-map-marker-alt me-2 text-primary"></i> ${cinema.location}</p>
+                                                <div class="mt-3">
+                                                    <button class="btn btn-sm btn-outline-primary view-schedules-btn" data-id="${doc.id}">
+                                                        <i class="fas fa-calendar-alt me-1"></i> Lihat Jadwal
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        cinemasContainer.innerHTML += cinemaCard;
+                    });
+
+                    // Add event listeners to view schedules buttons
+                    document.querySelectorAll('.view-schedules-btn').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const cinemaId = this.getAttribute('data-id');
+                            viewCinemaSchedules(cinemaId);
+                        });
+                    });
+                })
+                .catch((error) => {
+                    showToast('error', 'Gagal memuat data bioskop: ' + error.message);
+                });
+        }
+
+        // View schedules for a specific cinema
+        function viewCinemaSchedules(cinemaId) {
+            const modalTitle = document.createElement('h5');
+            modalTitle.className = 'modal-title';
+            modalTitle.textContent = 'Jadwal Tayang';
+            
+            const modalHeader = document.createElement('div');
+            modalHeader.className = 'modal-header';
+            modalHeader.appendChild(modalTitle);
+            
+            const closeButton = document.createElement('button');
+            closeButton.type = 'button';
+            closeButton.className = 'btn-close';
+            closeButton.setAttribute('data-bs-dismiss', 'modal');
+            modalHeader.appendChild(closeButton);
+            
+            const modalBody = document.createElement('div');
+            modalBody.className = 'modal-body';
+            modalBody.innerHTML = '<div class="spinner-container"><div class="spinner"></div></div>';
+            
+            const modalContent = document.createElement('div');
+            modalContent.className = 'modal-content';
+            modalContent.appendChild(modalHeader);
+            modalContent.appendChild(modalBody);
+            
+            const modalDialog = document.createElement('div');
+            modalDialog.className = 'modal-dialog modal-lg';
+            modalDialog.appendChild(modalContent);
+            
+            const schedulesModal = document.createElement('div');
+            schedulesModal.className = 'modal fade';
+            schedulesModal.id = 'schedulesModal';
+            schedulesModal.tabIndex = '-1';
+            schedulesModal.appendChild(modalDialog);
+            
+            document.body.appendChild(schedulesModal);
+            
+            const bsModal = new bootstrap.Modal(schedulesModal);
+            bsModal.show();
+            
+            // Load schedules for this cinema
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            db.collection('schedules')
+                .where('cinemaId', '==', cinemaId)
+                .get()
+                .then((querySnapshot) => {
+                    modalBody.innerHTML = '';
+                    
+                    if (querySnapshot.empty) {
+                        modalBody.innerHTML = '<div class="text-center py-4"><p>Tidak ada jadwal tersedia</p></div>';
+                        return;
+                    }
+                    
+                    // Filter schedules that haven't passed yet
+                    const validSchedules = [];
+                    
+                    querySnapshot.forEach((doc) => {
+                        const schedule = doc.data();
+                        const scheduleDate = new Date(schedule.dateTime.seconds * 1000);
+                        
+                        if (scheduleDate >= today) {
+                            validSchedules.push({
+                                id: doc.id,
+                                ...schedule,
+                                timestamp: scheduleDate.getTime()
+                            });
+                        }
+                    });
+                    
+                    // Sort by date
+                    validSchedules.sort((a, b) => a.timestamp - b.timestamp);
+                    
+                    if (validSchedules.length === 0) {
+                        modalBody.innerHTML = '<div class="text-center py-4"><p>Tidak ada jadwal tersedia</p></div>';
+                        return;
+                    }
+                    
+                    // Get movie details for each movie
+                    const moviePromises = validSchedules.map(schedule => 
+                        db.collection('movies').doc(schedule.movieId).get()
+                    );
+                    
+                    Promise.all(moviePromises)
+                        .then((movieDocs) => {
+                            movieDocs.forEach((movieDoc, index) => {
+                                if (movieDoc.exists) {
+                                    const movie = movieDoc.data();
+                                    const schedule = validSchedules[index];
+                                    
+                                    const scheduleDate = new Date(schedule.timestamp);
+                                    const formattedDate = scheduleDate.toLocaleDateString('id-ID', { 
+                                        weekday: 'long', 
+                                        day: 'numeric', 
+                                        month: 'long' 
+                                    });
+                                    const formattedTime = scheduleDate.toLocaleTimeString('id-ID', { 
+                                        hour: '2-digit', 
+                                        minute: '2-digit' 
+                                    });
+                                    
+                                    const movieCard = document.createElement('div');
+                                    movieCard.className = 'card mb-4';
+                                    
+                                    const cardHeader = document.createElement('div');
+                                    cardHeader.className = 'card-header';
+                                    cardHeader.innerHTML = `<h5>${movie.title}</h5>`;
+                                    
+                                    const cardBody = document.createElement('div');
+                                    cardBody.className = 'card-body';
+                                    
+                                    const scheduleCol = document.createElement('div');
+                                    scheduleCol.className = 'col-md-6 mb-3';
+                                    
+                                    scheduleCol.innerHTML = `
+                                        <div class="card h-100">
+                                            <div class="card-body">
+                                                <h5 class="card-title">${schedule.studio}</h5>
+                                                <p class="card-text">${formattedDate}</p>
+                                                <p class="card-text"><i class="fas fa-clock me-2"></i> ${formattedTime}</p>
+                                                <p class="card-text"><i class="fas fa-ticket-alt me-2"></i> Rp ${schedule.price.toLocaleString('id-ID')}</p>
+                                                <div class="mt-3">
+                                                    <button class="btn btn-primary w-100 book-schedule-btn" data-movie-id="${movieDoc.id}" data-schedule-id="${schedule.id}">
+                                                        <i class="fas fa-ticket-alt me-2"></i> Pesan Tiket
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `;
+                                    
+                                    cardBody.appendChild(scheduleCol);
+                                    movieCard.appendChild(cardHeader);
+                                    movieCard.appendChild(cardBody);
+                                    modalBody.appendChild(movieCard);
+                                }
+                            });
+                            
+                            // Add event listeners to book buttons
+                            modalBody.querySelectorAll('.book-schedule-btn').forEach(btn => {
+                                btn.addEventListener('click', function() {
+                                    const movieId = this.getAttribute('data-movie-id');
+                                    const scheduleId = this.getAttribute('data-schedule-id');
+                                    bsModal.hide();
+                                    startBookingProcess(movieId, scheduleId);
+                                });
+                            });
+                        });
+                })
+                .catch((error) => {
+                    modalBody.innerHTML = `<div class="alert alert-danger">Gagal memuat jadwal: ${error.message}</div>`;
+                });
+                
+            // Remove modal when hidden
+            schedulesModal.addEventListener('hidden.bs.modal', () => {
+                document.body.removeChild(schedulesModal);
+            });
+        }
+
+        // Load promos from Firestore
+        function loadPromos() {
+            const promosContainer = document.getElementById('promosList');
+            promosContainer.innerHTML = '<div class="col-12 spinner-container"><div class="spinner"></div></div>';
+            
+            db.collection('promos').where('validUntil', '>=', new Date()).get()
+                .then((querySnapshot) => {
+                    promosContainer.innerHTML = '';
+                    
+                    if (querySnapshot.empty) {
+                        promosContainer.innerHTML = '<div class="col-12 text-center py-5"><p>Tidak ada promo tersedia saat ini</p></div>';
+                        return;
+                    }
+                    
+                    querySnapshot.forEach((doc) => {
+                        const promo = doc.data();
+                        const promoCard = `
+                            <div class="col-md-4">
+                                <div class="card promo-card h-100">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <h5 class="card-title">${promo.title}</h5>
+                                            <span class="badge bg-light text-dark">${promo.code}</span>
+                                        </div>
+                                        <p class="card-text">${promo.description}</p>
+                                        <p class="card-text"><i class="fas fa-calendar me-1"></i> Berlaku hingga ${new Date(promo.validUntil.seconds * 1000).toLocaleDateString()}</p>
+                                        <button class="btn btn-light mt-2 claim-promo-btn" data-code="${promo.code}">Klaim Promo</button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        promosContainer.innerHTML += promoCard;
+                    });
+                    
+                    // Add event listeners to claim promo buttons
+                    document.querySelectorAll('.claim-promo-btn').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const promoCode = this.getAttribute('data-code');
+                            document.getElementById('promoCode').value = promoCode;
+                            showToast('success', `Kode promo ${promoCode} telah disalin`);
+                        });
+                    });
+                })
+                .catch((error) => {
+                    showToast('error', 'Gagal memuat data promo: ' + error.message);
+                });
+        }
+
+        // Show movie details
+        function showMovieDetails(movieId) {
+            db.collection('movies').doc(movieId).get()
+                .then((doc) => {
+                    if (doc.exists) {
+                        const movie = doc.data();
+                        
+                        document.getElementById('movieDetailTitle').textContent = movie.title;
+                        document.getElementById('movieDetailPoster').src = movie.poster;
+                        document.getElementById('movieDetailGenre').textContent = movie.genre.split(',')[0];
+                        document.getElementById('movieDetailDuration').textContent = movie.duration;
+                        document.getElementById('movieDetailRating').textContent = movie.rating;
+                        document.getElementById('movieDetailSynopsis').textContent = movie.synopsis;
+                        document.getElementById('watchTrailerBtn').href = movie.trailer;
+                        
+                        document.getElementById('bookThisMovieBtn').onclick = function() {
+                            movieDetailModal.hide();
+                            startBookingProcess(movieId);
+                        };
+                        
+                        movieDetailModal.show();
+                    } else {
+                        showToast('error', 'Film tidak ditemukan');
+                    }
+                })
+                .catch((error) => {
+                    showToast('error', 'Gagal memuat detail film: ' + error.message);
+                });
+        }
+
+        // Start booking process
+        function startBookingProcess(movieId, scheduleId = null) {
+            currentStep = 1;
+            selectedMovie = null;
+            selectedCinema = null;
+            selectedSchedule = null;
+            selectedSeats = [];
+            appliedPromo = null;
+            basePrice = 0;
+            totalPrice = 0;
+            
+            // Reset UI
+            document.getElementById('step1').classList.add('active');
+            document.getElementById('step2').classList.remove('active');
+            document.getElementById('step3').classList.remove('active');
+            document.getElementById('step4').classList.remove('active');
+            
+            document.getElementById('step1Content').style.display = 'block';
+            document.getElementById('step2Content').style.display = 'none';
+            document.getElementById('step3Content').style.display = 'none';
+            document.getElementById('step4Content').style.display = 'none';
+            
+            prevStepBtn.style.display = 'none';
+            nextStepBtn.style.display = 'block';
+            confirmBookingBtn.style.display = 'none';
+            
+            // Load movie data
+            db.collection('movies').doc(movieId).get()
+                .then((doc) => {
+                    if (doc.exists) {
+                        selectedMovie = { id: doc.id, ...doc.data() };
+                        
+                        if (scheduleId) {
+                            // Directly go to step 3 if scheduleId is provided
+                            db.collection('schedules').doc(scheduleId).get()
+                                .then((scheduleDoc) => {
+                                    if (scheduleDoc.exists) {
+                                        selectedSchedule = { id: scheduleDoc.id, ...scheduleDoc.data() };
+                                        basePrice = selectedSchedule.price;
+                                        
+                                        // Get cinema info
+                                        return db.collection('cinemas').doc(selectedSchedule.cinemaId).get();
+                                    } else {
+                                        throw new Error('Jadwal tidak ditemukan');
+                                    }
+                                })
+                                .then((cinemaDoc) => {
+                                    if (cinemaDoc.exists) {
+                                        selectedCinema = { id: cinemaDoc.id, ...cinemaDoc.data() };
+                                        
+                                        // Update UI to step 3
+                                        document.getElementById('step1').classList.remove('active');
+                                        document.getElementById('step2').classList.remove('active');
+                                        document.getElementById('step3').classList.add('active');
+                                        
+                                        document.getElementById('step1Content').style.display = 'none';
+                                        document.getElementById('step2Content').style.display = 'none';
+                                        document.getElementById('step3Content').style.display = 'block';
+                                        
+                                        prevStepBtn.style.display = 'block';
+                                        
+                                        currentStep = 3;
+                                        
+                                        // Load seat map
+                                        loadSeatMap();
+                                    } else {
+                                        throw new Error('Bioskop tidak ditemukan');
+                                    }
+                                })
+                                .catch((error) => {
+                                    showToast('error', error.message);
+                                });
+                        } else {
+                            // Normal flow - start from step 1
+                            loadCinemasForBooking();
+                            bookingModal.show();
+                        }
+                    } else {
+                        showToast('error', 'Film tidak ditemukan');
+                    }
+                })
+                .catch((error) => {
+                    showToast('error', 'Gagal memulai pemesanan: ' + error.message);
+                });
+        }
+
+        // Load cinemas for booking process
+        function loadCinemasForBooking() {
+            const cinemaSelection = document.getElementById('cinemaSelection');
+            cinemaSelection.innerHTML = '<div class="col-12 spinner-container"><div class="spinner"></div></div>';
+            
+            db.collection('cinemas').get()
+                .then((querySnapshot) => {
+                    cinemaSelection.innerHTML = '';
+                    
+                    if (querySnapshot.empty) {
+                        cinemaSelection.innerHTML = '<div class="col-12 text-center py-3"><p>Tidak ada bioskop tersedia</p></div>';
+                        return;
+                    }
+                    
+                    querySnapshot.forEach((doc) => {
+                        const cinema = doc.data();
+                        const cinemaCard = `
+                            <div class="col-md-6 mb-3">
+                                <div class="card cinema-card h-100">
+                                    <div class="card-body">
+                                        <h5 class="card-title">${cinema.name}</h5>
+                                        <p class="card-text"><i class="fas fa-map-marker-alt me-2 text-primary"></i> ${cinema.location}</p>
+                                        <div class="mt-3">
+                                            <button class="btn btn-primary w-100 select-cinema-btn" data-id="${doc.id}">
+                                                Pilih Bioskop Ini
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        cinemaSelection.innerHTML += cinemaCard;
+                    });
+                    
+                    // Add event listeners to cinema selection buttons
+                    document.querySelectorAll('.select-cinema-btn').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const cinemaId = this.getAttribute('data-id');
+                            selectCinema(cinemaId);
+                        });
+                    });
+                })
+                .catch((error) => {
+                    showToast('error', 'Gagal memuat bioskop: ' + error.message);
+                });
+        }
+
+        // Select cinema and proceed to next step
+        function selectCinema(cinemaId) {
+            db.collection('cinemas').doc(cinemaId).get()
+                .then((doc) => {
+                    if (doc.exists) {
+                        selectedCinema = { id: doc.id, ...doc.data() };
+                        
+                        // Load schedules for this movie and cinema
+                        loadSchedules();
+                        
+                        // Update UI for step 2
+                        document.getElementById('step1').classList.remove('active');
+                        document.getElementById('step2').classList.add('active');
+                        
+                        document.getElementById('step1Content').style.display = 'none';
+                        document.getElementById('step2Content').style.display = 'block';
+                        
+                        prevStepBtn.style.display = 'block';
+                        
+                        currentStep = 2;
+                    } else {
+                        showToast('error', 'Bioskop tidak ditemukan');
+                    }
+                })
+                .catch((error) => {
+                    showToast('error', 'Gagal memilih bioskop: ' + error.message);
+                });
+        }
+
+        // Load schedules for selected movie and cinema
+        function loadSchedules() {
+            const scheduleSelection = document.getElementById('scheduleSelection');
+            scheduleSelection.innerHTML = '<div class="col-12 spinner-container"><div class="spinner"></div></div>';
+            
+            // Get today's date and time
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            
+            db.collection('schedules')
+                .where('movieId', '==', selectedMovie.id)
+                .where('cinemaId', '==', selectedCinema.id)
+                .get()
+                .then((querySnapshot) => {
+                    scheduleSelection.innerHTML = '';
+                    
+                    if (querySnapshot.empty) {
+                        scheduleSelection.innerHTML = '<div class="col-12 text-center py-3"><p>Tidak ada jadwal tersedia</p></div>';
+                        return;
+                    }
+                    
+                    // Filter schedules that haven't passed yet
+                    const validSchedules = [];
+                    
+                    querySnapshot.forEach((doc) => {
+                        const schedule = doc.data();
+                        const scheduleDate = new Date(schedule.dateTime.seconds * 1000);
+                        
+                        if (scheduleDate >= today) {
+                            validSchedules.push({
+                                id: doc.id,
+                                ...schedule,
+                                timestamp: scheduleDate.getTime()
+                            });
+                        }
+                    });
+                    
+                    // Sort by date
+                    validSchedules.sort((a, b) => a.timestamp - b.timestamp);
+                    
+                    if (validSchedules.length === 0) {
+                        scheduleSelection.innerHTML = '<div class="col-12 text-center py-3"><p>Tidak ada jadwal tersedia</p></div>';
+                        return;
+                    }
+                    
+                    // Display valid schedules
+                    validSchedules.forEach((schedule) => {
+                        const scheduleDate = new Date(schedule.timestamp);
+                        const formattedDate = scheduleDate.toLocaleDateString('id-ID', { 
+                            weekday: 'long', 
+                            day: 'numeric', 
+                            month: 'long' 
+                        });
+                        const formattedTime = scheduleDate.toLocaleTimeString('id-ID', { 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                        });
+                        
+                        const scheduleCard = `
+                            <div class="col-md-6 mb-3">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <h5 class="card-title">${schedule.studio}</h5>
+                                        <p class="card-text">${formattedDate}</p>
+                                        <p class="card-text"><i class="fas fa-clock me-2"></i> ${formattedTime}</p>
+                                        <p class="card-text"><i class="fas fa-ticket-alt me-2"></i> Rp ${schedule.price.toLocaleString('id-ID')}</p>
+                                        <div class="mt-3">
+                                            <button class="btn btn-primary w-100 select-schedule-btn" data-id="${schedule.id}">
+                                                Pilih Jadwal Ini
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        scheduleSelection.innerHTML += scheduleCard;
+                    });
+                    
+                    // Add event listeners to schedule selection buttons
+                    document.querySelectorAll('.select-schedule-btn').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const scheduleId = this.getAttribute('data-id');
+                            selectSchedule(scheduleId);
+                        });
+                    });
+                })
+                .catch((error) => {
+                    showToast('error', 'Gagal memuat jadwal: ' + error.message);
+                });
+        }
+
+        // Select schedule and proceed to next step
+        function selectSchedule(scheduleId) {
+            db.collection('schedules').doc(scheduleId).get()
+                .then((doc) => {
+                    if (doc.exists) {
+                        selectedSchedule = { id: doc.id, ...doc.data() };
+                        basePrice = selectedSchedule.price;
+                        totalPrice = basePrice;
+                        
+                        // Load seat map for this schedule
+                        loadSeatMap();
+                        
+                        // Update UI for step 3
+                        document.getElementById('step2').classList.remove('active');
+                        document.getElementById('step3').classList.add('active');
+                        
+                        document.getElementById('step2Content').style.display = 'none';
+                        document.getElementById('step3Content').style.display = 'block';
+                        
+                        currentStep = 3;
+                    } else {
+                        showToast('error', 'Jadwal tidak ditemukan');
+                    }
+                })
+                .catch((error) => {
+                    showToast('error', 'Gagal memilih jadwal: ' + error.message);
+                });
+        }
+
+        // Load seat map for selected schedule
+        function loadSeatMap() {
+            const seatMap = document.getElementById('seatMap');
+            seatMap.innerHTML = '';
+            
+            // Generate seat map (5 rows x 10 seats)
+            for (let row = 1; row <= 5; row++) {
+                for (let seatNum = 1; seatNum <= 10; seatNum++) {
+                    const seatId = `${String.fromCharCode(64 + row)}${seatNum}`;
+                    const seat = document.createElement('div');
+                    seat.className = 'seat';
+                    seat.textContent = seatId;
+                    seat.setAttribute('data-seat', seatId);
+                    
+                    // Check if seat is already booked
+                    db.collection('bookings')
+                        .where('scheduleId', '==', selectedSchedule.id)
+                        .where('seats', 'array-contains', seatId)
+                        .get()
+                        .then(querySnapshot => {
+                            if (!querySnapshot.empty) {
+                                seat.classList.add('occupied');
+                            } else if (seatNum >= 7 && seatNum <= 10) {
+                                seat.classList.add('vip');
+                            }
+                        });
+                    
+                    seat.addEventListener('click', function() {
+                        if (!this.classList.contains('occupied')) {
+                            this.classList.toggle('selected');
+                            
+                            // Update selected seats array
+                            const seatId = this.getAttribute('data-seat');
+                            if (this.classList.contains('selected')) {
+                                if (!selectedSeats.includes(seatId)) {
+                                    selectedSeats.push(seatId);
+                                }
+                            } else {
+                                selectedSeats = selectedSeats.filter(id => id !== seatId);
+                            }
+                            
+                            // Update total price
+                            updateTotalPrice();
+                        }
+                    });
+                    
+                    seatMap.appendChild(seat);
+                }
+            }
+            
+            // Reset selected seats and price
+            selectedSeats = [];
+            updateTotalPrice();
+        }
+
+        // Update total price calculation
+        function updateTotalPrice() {
+            basePrice = selectedSchedule.price;
+            totalPrice = basePrice * selectedSeats.length;
+            
+            // Apply VIP seat premium
+            selectedSeats.forEach(seat => {
+                if (seat.match(/[A-E][7-9]|10/)) {
+                    totalPrice += 10000; // Additional charge for VIP seats
+                }
+            });
+            
+            // Apply promo discount if available
+            if (appliedPromo) {
+                totalPrice = totalPrice * (1 - appliedPromo.discount / 100);
+            }
+            
+            document.getElementById('totalPrice').textContent = `Rp ${Math.round(totalPrice).toLocaleString('id-ID')}`;
+            document.getElementById('bookingTotalPrice').textContent = `Rp ${Math.round(totalPrice).toLocaleString('id-ID')}`;
+            
+            // Update QR code with new amount
+            updateQRCode();
+        }
+
+        // Update QR code with current total
+        function updateQRCode() {
+            const qrisImage = document.querySelector('.qris-image');
+            if (qrisImage) {
+                qrisImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=CineMaxTiket-${selectedMovie.title.replace(/\s+/g, '')}-${totalPrice}-${Math.random().toString(36).substring(2, 15)}`;
+            }
+        }
+
+        // Apply promo code
+        function applyPromo() {
+            const promoCode = document.getElementById('promoCode').value.trim();
+            const promoMessage = document.getElementById('promoMessage');
+            
+            if (!promoCode) {
+                promoMessage.textContent = 'Silakan masukkan kode promo';
+                promoMessage.classList.remove('text-success');
+                promoMessage.classList.add('text-danger');
+                return;
+            }
+            
+            db.collection('promos').where('code', '==', promoCode).get()
+                .then((querySnapshot) => {
+                    if (querySnapshot.empty) {
+                        promoMessage.textContent = 'Kode promo tidak valid';
+                        promoMessage.classList.remove('text-success');
+                        promoMessage.classList.add('text-danger');
+                        appliedPromo = null;
+                    } else {
+                        querySnapshot.forEach((doc) => {
+                            const promo = doc.data();
+                            const validUntil = new Date(promo.validUntil.seconds * 1000);
+                            const today = new Date();
+                            
+                            if (validUntil < today) {
+                                promoMessage.textContent = 'Kode promo sudah kadaluarsa';
+                                promoMessage.classList.remove('text-success');
+                                promoMessage.classList.add('text-danger');
+                                appliedPromo = null;
+                            } else {
+                                appliedPromo = promo;
+                                updateTotalPrice();
+                                promoMessage.textContent = `Promo "${promo.title}" berhasil diterapkan (Diskon ${promo.discount}%)`;
+                                promoMessage.classList.remove('text-danger');
+                                promoMessage.classList.add('text-success');
+                            }
+                        });
+                    }
+                })
+                .catch((error) => {
+                    promoMessage.textContent = 'Gagal memeriksa promo: ' + error.message;
+                    promoMessage.classList.remove('text-success');
+                    promoMessage.classList.add('text-danger');
+                });
+        }
+
+        // Start payment countdown
+        function startPaymentCountdown() {
+            // Clear any existing timer
+            if (paymentTimer) {
+                clearInterval(paymentTimer);
+            }
+            
+            timeLeft = 300; // Reset to 5 minutes
+            updateCountdownDisplay();
+            
+            paymentTimer = setInterval(() => {
+                timeLeft--;
+                updateCountdownDisplay();
+                
+                if (timeLeft <= 0) {
+                    clearInterval(paymentTimer);
+                    showToast('error', 'Waktu pembayaran telah habis, silakan mulai pemesanan kembali');
+                    bookingModal.hide();
+                }
+            }, 1000);
+        }
+
+        // Update payment countdown display
+        function updateCountdownDisplay() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            document.getElementById('paymentCountdown').textContent = 
+                `Selesaikan pembayaran dalam: ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        // Go to previous step in booking process
+        function goToPreviousStep() {
+            if (currentStep > 1) {
+                currentStep--;
+                
+                // Update step indicators
+                document.getElementById('step1').classList.toggle('active', currentStep === 1);
+                document.getElementById('step2').classList.toggle('active', currentStep === 2);
+                document.getElementById('step3').classList.toggle('active', currentStep === 3);
+                document.getElementById('step4').classList.toggle('active', currentStep === 4);
+                
+                // Update content visibility
+                document.getElementById('step1Content').style.display = currentStep === 1 ? 'block' : 'none';
+                document.getElementById('step2Content').style.display = currentStep === 2 ? 'block' : 'none';
+                document.getElementById('step3Content').style.display = currentStep === 3 ? 'block' : 'none';
+                document.getElementById('step4Content').style.display = currentStep === 4 ? 'block' : 'none';
+                
+                // Update button visibility
+                prevStepBtn.style.display = currentStep === 1 ? 'none' : 'block';
+                nextStepBtn.style.display = currentStep === 4 ? 'none' : 'block';
+                confirmBookingBtn.style.display = currentStep === 4 ? 'block' : 'none';
+            }
+        }
+
+        // Go to next step in booking process
+        function goToNextStep() {
+            if (currentStep < 4) {
+                // Validate current step before proceeding
+                if (currentStep === 3 && selectedSeats.length === 0) {
+                    showToast('error', 'Silakan pilih minimal satu kursi');
+                    return;
+                }
+                
+                currentStep++;
+                
+                // If moving to step 4, update booking summary
+                if (currentStep === 4) {
+                    updateBookingSummary();
+                    startPaymentCountdown();
+                }
+                
+                // Update step indicators
+                document.getElementById('step1').classList.toggle('active', currentStep === 1);
+                document.getElementById('step2').classList.toggle('active', currentStep === 2);
+                document.getElementById('step3').classList.toggle('active', currentStep === 3);
+                document.getElementById('step4').classList.toggle('active', currentStep === 4);
+                
+                // Update content visibility
+                document.getElementById('step1Content').style.display = currentStep === 1 ? 'block' : 'none';
+                document.getElementById('step2Content').style.display = currentStep === 2 ? 'block' : 'none';
+                document.getElementById('step3Content').style.display = currentStep === 3 ? 'block' : 'none';
+                document.getElementById('step4Content').style.display = currentStep === 4 ? 'block' : 'none';
+                
+                // Update button visibility
+                prevStepBtn.style.display = currentStep === 1 ? 'none' : 'block';
+                nextStepBtn.style.display = currentStep === 4 ? 'none' : 'block';
+                confirmBookingBtn.style.display = currentStep === 4 ? 'block' : 'none';
+            }
+        }
+
+        // Update booking summary in step 4
+        function updateBookingSummary() {
+            const scheduleDate = new Date(selectedSchedule.dateTime.seconds * 1000);
+            
+            document.getElementById('bookingMovieTitle').textContent = selectedMovie.title;
+            document.getElementById('bookingMoviePoster').src = selectedMovie.poster;
+            document.getElementById('bookingCinemaName').textContent = selectedCinema.name;
+            document.getElementById('bookingScheduleDate').textContent = scheduleDate.toLocaleDateString('id-ID', { 
+                weekday: 'long', 
+                day: 'numeric', 
+                month: 'long',
+                year: 'numeric'
+            });
+            document.getElementById('bookingScheduleTime').textContent = scheduleDate.toLocaleTimeString('id-ID', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            document.getElementById('bookingSeats').textContent = selectedSeats.join(', ');
+            document.getElementById('bookingTotalPrice').textContent = `Rp ${Math.round(totalPrice).toLocaleString('id-ID')}`;
+            
+            // Update QR code with booking reference
+            bookingRef = `CINEMAX-${Date.now().toString().slice(-6)}`;
+            updateQRCode();
+        }
+
+        // Confirm booking and process payment
+        function confirmBooking() {
+            if (!document.getElementById('agreeTerms').checked) {
+                showToast('error', 'Anda harus menyetujui syarat dan ketentuan');
+                return;
+            }
+            
+            // Clear payment timer
+            if (paymentTimer) {
+                clearInterval(paymentTimer);
+            }
+            
+            // Create booking record in Firestore
+            const scheduleDate = new Date(selectedSchedule.dateTime.seconds * 1000);
+            
+            const bookingData = {
+                bookingRef: bookingRef,
+                userId: currentUser.uid,
+                movieId: selectedMovie.id,
+                movieTitle: selectedMovie.title,
+                cinemaId: selectedCinema.id,
+                cinemaName: selectedCinema.name,
+                scheduleId: selectedSchedule.id,
+                scheduleDateTime: selectedSchedule.dateTime,
+                studio: selectedSchedule.studio,
+                seats: selectedSeats,
+                basePrice: basePrice,
+                totalPrice: Math.round(totalPrice),
+                promoCode: appliedPromo ? appliedPromo.code : null,
+                promoDiscount: appliedPromo ? appliedPromo.discount : 0,
+                status: 'completed',
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+            
+            // First, check if seats are still available
+            const seatPromises = selectedSeats.map(seat => 
+                db.collection('bookings')
+                    .where('scheduleId', '==', selectedSchedule.id)
+                    .where('seats', 'array-contains', seat)
+                    .get()
+            );
+            
+            Promise.all(seatPromises)
+                .then(results => {
+                    const isAnySeatTaken = results.some(querySnapshot => !querySnapshot.empty);
+                    
+                    if (isAnySeatTaken) {
+                        throw new Error('Mohon maaf, beberapa kursi yang Anda pilih sudah tidak tersedia. Silakan pilih kursi lain.');
+                    }
+                    
+                    // All seats are available, proceed with booking
+                    return db.collection('bookings').add(bookingData);
+                })
+                .then(() => {
+                    // Update user points (10 points per ticket)
+                    const pointsEarned = selectedSeats.length * 10;
+                    
+                    return db.collection('users').doc(currentUser.uid).update({
+                        points: firebase.firestore.FieldValue.increment(pointsEarned)
+                    });
+                })
+                .then(() => {
+                    // Show booking success
+                    showBookingSuccess();
+                })
+                .catch(error => {
+                    showToast('error', error.message);
+                    // Reload seat map if seats are taken
+                    if (error.message.includes('kursi')) {
+                        loadSeatMap();
+                        goToPreviousStep();
+                    }
+                });
+        }
+
+        // Show booking success
+        function showBookingSuccess() {
+            const scheduleDate = new Date(selectedSchedule.dateTime.seconds * 1000);
+            
+            // Create booking success modal
+            const modalTitle = document.createElement('h5');
+            modalTitle.className = 'modal-title';
+            modalTitle.textContent = 'Pemesanan Berhasil';
+            
+            const modalHeader = document.createElement('div');
+            modalHeader.className = 'modal-header';
+            modalHeader.appendChild(modalTitle);
+            
+            const closeButton = document.createElement('button');
+            closeButton.type = 'button';
+            closeButton.className = 'btn-close';
+            closeButton.setAttribute('data-bs-dismiss', 'modal');
+            modalHeader.appendChild(closeButton);
+            
+            const modalBody = document.createElement('div');
+            modalBody.className = 'modal-body';
+            
+            const successContent = document.createElement('div');
+            successContent.className = 'booking-success';
+            
+            successContent.innerHTML = `
+                <i class="fas fa-check-circle fa-5x text-success mb-4"></i>
+                <h4>Pemesanan Tiket Berhasil!</h4>
+                
+                <div class="booking-details">
+                    <p><strong>Kode Booking:</strong> ${bookingRef}</p>
+                    <p><strong>Film:</strong> ${selectedMovie.title}</p>
+                    <p><strong>Bioskop:</strong> ${selectedCinema.name}</p>
+                    <p><strong>Tanggal:</strong> ${scheduleDate.toLocaleDateString('id-ID', { 
+                        weekday: 'long', 
+                        day: 'numeric', 
+                        month: 'long',
+                        year: 'numeric'
+                    })}</p>
+                    <p><strong>Waktu:</strong> ${scheduleDate.toLocaleTimeString('id-ID', { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                    })}</p>
+                    <p><strong>Studio:</strong> ${selectedSchedule.studio}</p>
+                    <p><strong>Kursi:</strong> ${selectedSeats.join(', ')}</p>
+                    <p><strong>Total Pembayaran:</strong> Rp ${Math.round(totalPrice).toLocaleString('id-ID')}</p>
+                </div>
+                
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i> Tiket juga dapat dilihat di menu "Tiket Saya" pada profil Anda.
+                </div>
+                
+                <button class="btn btn-primary" id="viewTicketBtn">
+                    <i class="fas fa-ticket-alt me-2"></i> Lihat Tiket
+                </button>
+                <button class="btn btn-outline-primary ms-2" id="printTicketBtn">
+                    <i class="fas fa-print me-2"></i> Cetak Tiket
+                </button>
+            `;
+            
+            modalBody.appendChild(successContent);
+            
+            const modalFooter = document.createElement('div');
+            modalFooter.className = 'modal-footer';
+            
+            const closeBtn = document.createElement('button');
+            closeBtn.type = 'button';
+            closeBtn.className = 'btn btn-secondary';
+            closeBtn.setAttribute('data-bs-dismiss', 'modal');
+            closeBtn.textContent = 'Tutup';
+            modalFooter.appendChild(closeBtn);
+            
+            const modalContent = document.createElement('div');
+            modalContent.className = 'modal-content';
+            modalContent.appendChild(modalHeader);
+            modalContent.appendChild(modalBody);
+            modalContent.appendChild(modalFooter);
+            
+            const modalDialog = document.createElement('div');
+            modalDialog.className = 'modal-dialog modal-lg';
+            modalDialog.appendChild(modalContent);
+            
+            const bookingSuccessModal = document.createElement('div');
+            bookingSuccessModal.className = 'modal fade';
+            bookingSuccessModal.id = 'bookingSuccessModal';
+            bookingSuccessModal.tabIndex = '-1';
+            bookingSuccessModal.appendChild(modalDialog);
+            
+            document.body.appendChild(bookingSuccessModal);
+            
+            const bsModal = new bootstrap.Modal(bookingSuccessModal);
+            bsModal.show();
+            
+            // Close booking modal
+            bookingModal.hide();
+            
+            // Add event listeners to buttons
+            bookingSuccessModal.addEventListener('shown.bs.modal', () => {
+                document.getElementById('viewTicketBtn').addEventListener('click', () => {
+                    // Find the booking to view details
+                    db.collection('bookings')
+                        .where('bookingRef', '==', bookingRef)
+                        .limit(1)
+                        .get()
+                        .then(querySnapshot => {
+                            if (!querySnapshot.empty) {
+                                const doc = querySnapshot.docs[0];
+                                viewTicketDetails(doc.id);
+                                bsModal.hide();
+                            }
+                        });
+                });
+                
+                document.getElementById('printTicketBtn').addEventListener('click', () => {
+                    window.print();
+                });
+            });
+            
+            // Remove modal when hidden
+            bookingSuccessModal.addEventListener('hidden.bs.modal', () => {
+                document.body.removeChild(bookingSuccessModal);
+            });
+        }
+    </script>
+</body>
+</html>
