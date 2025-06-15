@@ -8,7 +8,7 @@ Aplikasi web untuk pemesanan tiket bioskop yang sudah terdeploy di Firebase.
 - Dll (sesuaikan dengan fitur aplikasi Anda)
 
 ## Link
-- [Hosting URL](https://aplikasi-pemesanan-tiket-97b9f.web.app)
+- [Website URL](https://aplikasi-pemesanan-tiket-97b9f.web.app)
 - [Firebase Console](https://console.firebase.google.com/project/aplikasi-pemesanan-tiket-97b9f/overview)
 
 ## Cara Menjalankan
